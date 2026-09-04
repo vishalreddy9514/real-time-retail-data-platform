@@ -33,7 +33,7 @@ from __future__ import annotations
 import csv
 import random
 from dataclasses import dataclass, asdict
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 random.seed(42)
@@ -121,7 +121,7 @@ class Store:
 def generate_customers(n: int) -> list[Customer]:
     customers = []
     start = date(2018, 1, 1)
-    span_days = (date.today() - start).days
+    span_days = (datetime.now(timezone.utc).date() - start).days
     for i in range(n):
         reg_date = start + timedelta(days=random.randint(0, span_days))
         customers.append(

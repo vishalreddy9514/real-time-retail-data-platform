@@ -13,7 +13,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "data_generator"))
 
-from transactions import TransactionGenerator, PAYMENT_METHODS  # noqa: E402
+from transactions import TransactionGenerator  # noqa: E402
 
 
 @pytest.fixture(scope="module")
