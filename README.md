@@ -106,7 +106,7 @@ bug — `assert_refund_amount_not_greater_than_sales` catches products
 where refund amounts exceed gross sales, a real edge case surfaced by
 the anomaly injection logic in the data generator.
 
-![dbt test results](docs/screenshots/dbt-test-results.png)
+![dbt test results](docs/screenshots/dbt_results.png)
 
 ### Snowflake: real analytics on real data
 
