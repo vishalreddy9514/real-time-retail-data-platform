@@ -48,16 +48,20 @@ REFUND_RATE_THRESHOLD = float(os.getenv("REFUND_RATE_THRESHOLD", "0.5"))
 
 
 def high_value_anomalies(df: DataFrame) -> DataFrame:
-    return (
-        df.filter((F.col("transaction_type") == "purchase") & (F.col("total_amount") > HIGH_VALUE_THRESHOLD))
-        .select(
-            F.lit("high_value_transaction").alias("anomaly_type"),
-            "customer_id",
-            F.col("transaction_timestamp").alias("detected_at"),
-            F.concat(F.lit("Transaction "), F.col("transaction_id"),
-                     F.lit(" amount="), F.col("total_amount").cast("string")).alias("detail"),
-            F.lit("high").alias("severity"),
-        )
+    return df.filter(
+        (F.col("transaction_type") == "purchase")
+        & (F.col("total_amount") > HIGH_VALUE_THRESHOLD)
+    ).select(
+        F.lit("high_value_transaction").alias("anomaly_type"),
+        "customer_id",
+        F.col("transaction_timestamp").alias("detected_at"),
+        F.concat(
+            F.lit("Transaction "),
+            F.col("transaction_id"),
+            F.lit(" amount="),
+            F.col("total_amount").cast("string"),
+        ).alias("detail"),
+        F.lit("high").alias("severity"),
     )
 
 
@@ -73,8 +77,12 @@ def burst_anomalies(df: DataFrame) -> DataFrame:
             F.lit("transaction_burst").alias("anomaly_type"),
             "customer_id",
             F.col("window.end").alias("detected_at"),
-            F.concat(F.lit(""), F.col("txn_count").cast("string"),
-                     F.lit(" transactions in "), F.lit(BURST_WINDOW)).alias("detail"),
+            F.concat(
+                F.lit(""),
+                F.col("txn_count").cast("string"),
+                F.lit(" transactions in "),
+                F.lit(BURST_WINDOW),
+            ).alias("detail"),
             F.lit("medium").alias("severity"),
         )
     )
@@ -93,12 +101,15 @@ def geographic_anomalies(df: DataFrame, stores_df) -> DataFrame:
     w = Window.partitionBy("customer_id").orderBy("transaction_timestamp")
 
     with_lag = (
-        enriched
-        .withColumn("prev_city", F.lag("city").over(w))
+        enriched.withColumn("prev_city", F.lag("city").over(w))
         .withColumn("prev_ts", F.lag("transaction_timestamp").over(w))
         .withColumn(
             "minutes_since_prev",
-            (F.col("transaction_timestamp").cast("long") - F.col("prev_ts").cast("long")) / 60.0,
+            (
+                F.col("transaction_timestamp").cast("long")
+                - F.col("prev_ts").cast("long")
+            )
+            / 60.0,
         )
     )
 
@@ -113,8 +124,13 @@ def geographic_anomalies(df: DataFrame, stores_df) -> DataFrame:
         "customer_id",
         F.col("transaction_timestamp").alias("detected_at"),
         F.concat(
-            F.lit("Moved from "), F.col("prev_city"), F.lit(" to "), F.col("city"),
-            F.lit(" in "), F.round("minutes_since_prev", 1).cast("string"), F.lit(" min"),
+            F.lit("Moved from "),
+            F.col("prev_city"),
+            F.lit(" to "),
+            F.col("city"),
+            F.lit(" in "),
+            F.round("minutes_since_prev", 1).cast("string"),
+            F.lit(" min"),
         ).alias("detail"),
         F.lit("high").alias("severity"),
     )
@@ -125,26 +141,38 @@ def refund_rate_anomalies(df: DataFrame) -> DataFrame:
         df.withWatermark("transaction_timestamp", "10 minutes")
         .groupBy(F.window("transaction_timestamp", "10 minutes"), "customer_id")
         .agg(
-            F.sum(F.when(F.col("transaction_type") == "refund", 1).otherwise(0)).alias("refunds"),
-            F.sum(F.when(F.col("transaction_type") == "purchase", 1).otherwise(0)).alias("purchases"),
+            F.sum(F.when(F.col("transaction_type") == "refund", 1).otherwise(0)).alias(
+                "refunds"
+            ),
+            F.sum(
+                F.when(F.col("transaction_type") == "purchase", 1).otherwise(0)
+            ).alias("purchases"),
         )
         .withColumn(
             "refund_rate",
-            F.col("refunds") / F.greatest(F.col("purchases") + F.col("refunds"), F.lit(1)),
+            F.col("refunds")
+            / F.greatest(F.col("purchases") + F.col("refunds"), F.lit(1)),
         )
-        .filter((F.col("refunds") >= 2) & (F.col("refund_rate") >= REFUND_RATE_THRESHOLD))
+        .filter(
+            (F.col("refunds") >= 2) & (F.col("refund_rate") >= REFUND_RATE_THRESHOLD)
+        )
     )
     return agg.select(
         F.lit("refund_anomaly").alias("anomaly_type"),
         "customer_id",
         F.col("window.end").alias("detected_at"),
-        F.concat(F.lit("Refund rate "), F.round(F.col("refund_rate") * 100, 1).cast("string"),
-                 F.lit("% over window")).alias("detail"),
+        F.concat(
+            F.lit("Refund rate "),
+            F.round(F.col("refund_rate") * 100, 1).cast("string"),
+            F.lit("% over window"),
+        ).alias("detail"),
         F.lit("medium").alias("severity"),
     )
 
 
-def run_in_foreach_batch(micro_batch_df: DataFrame, batch_id: int, stores_df, sink_path: str):
+def run_in_foreach_batch(
+    micro_batch_df: DataFrame, batch_id: int, stores_df, sink_path: str
+):
     """Called from `foreachBatch` in the main streaming query so that the
     non-streaming-native geographic anomaly logic (window lag) can run on
     each finite micro-batch DataFrame, then union with the other rule
@@ -152,11 +180,9 @@ def run_in_foreach_batch(micro_batch_df: DataFrame, batch_id: int, stores_df, si
     anomalies = (
         high_value_anomalies(micro_batch_df)
         .unionByName(burst_anomalies(micro_batch_df), allowMissingColumns=True)
-        .unionByName(geographic_anomalies(micro_batch_df, stores_df), allowMissingColumns=True)
+        .unionByName(
+            geographic_anomalies(micro_batch_df, stores_df), allowMissingColumns=True
+        )
         .unionByName(refund_rate_anomalies(micro_batch_df), allowMissingColumns=True)
     )
-    (
-        anomalies.write.mode("append")
-        .partitionBy("anomaly_type")
-        .parquet(sink_path)
-    )
+    (anomalies.write.mode("append").partitionBy("anomaly_type").parquet(sink_path))

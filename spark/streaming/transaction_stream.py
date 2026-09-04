@@ -55,7 +55,11 @@ import os
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql import functions as F
 from pyspark.sql.types import (
-    StringType, StructField, StructType, DoubleType, IntegerType,
+    StringType,
+    StructField,
+    StructType,
+    DoubleType,
+    IntegerType,
 )
 
 import anomaly_detection
@@ -67,12 +71,24 @@ import anomaly_detection
 KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
 KAFKA_TOPIC = os.getenv("KAFKA_TOPIC_TRANSACTIONS", "transactions")
 
-RAW_LAKE_PATH = os.getenv("RAW_LAKE_PATH", "s3a://retail-data-platform/raw/transactions")
-BAD_RECORDS_PATH = os.getenv("BAD_RECORDS_PATH", "s3a://retail-data-platform/raw/bad_records")
-AGG_MINUTE_PATH = os.getenv("AGG_MINUTE_PATH", "s3a://retail-data-platform/curated/sales_by_minute")
-AGG_CITY_PATH = os.getenv("AGG_CITY_PATH", "s3a://retail-data-platform/curated/sales_by_city")
-AGG_PRODUCT_PATH = os.getenv("AGG_PRODUCT_PATH", "s3a://retail-data-platform/curated/product_performance")
-ANOMALIES_PATH = os.getenv("ANOMALIES_PATH", "s3a://retail-data-platform/curated/anomalies")
+RAW_LAKE_PATH = os.getenv(
+    "RAW_LAKE_PATH", "s3a://retail-data-platform/raw/transactions"
+)
+BAD_RECORDS_PATH = os.getenv(
+    "BAD_RECORDS_PATH", "s3a://retail-data-platform/raw/bad_records"
+)
+AGG_MINUTE_PATH = os.getenv(
+    "AGG_MINUTE_PATH", "s3a://retail-data-platform/curated/sales_by_minute"
+)
+AGG_CITY_PATH = os.getenv(
+    "AGG_CITY_PATH", "s3a://retail-data-platform/curated/sales_by_city"
+)
+AGG_PRODUCT_PATH = os.getenv(
+    "AGG_PRODUCT_PATH", "s3a://retail-data-platform/curated/product_performance"
+)
+ANOMALIES_PATH = os.getenv(
+    "ANOMALIES_PATH", "s3a://retail-data-platform/curated/anomalies"
+)
 
 CHECKPOINT_ROOT = os.getenv("CHECKPOINT_ROOT", "s3a://retail-data-platform/checkpoints")
 WATERMARK_DELAY = os.getenv("WATERMARK_DELAY", "2 minutes")
@@ -85,26 +101,30 @@ VALID_TRANSACTION_TYPES = {"purchase", "refund", "cancellation"}
 # Schema (mirrors kafka/schemas/transaction_event.json)
 # ---------------------------------------------------------------------------
 
-PAYLOAD_SCHEMA = StructType([
-    StructField("transaction_id", StringType(), True),
-    StructField("customer_id", StringType(), True),
-    StructField("product_id", StringType(), True),
-    StructField("store_id", StringType(), True),
-    StructField("quantity", IntegerType(), True),
-    StructField("unit_price", DoubleType(), True),
-    StructField("total_amount", DoubleType(), True),
-    StructField("payment_method", StringType(), True),
-    StructField("transaction_timestamp", StringType(), True),
-    StructField("transaction_type", StringType(), True),
-])
+PAYLOAD_SCHEMA = StructType(
+    [
+        StructField("transaction_id", StringType(), True),
+        StructField("customer_id", StringType(), True),
+        StructField("product_id", StringType(), True),
+        StructField("store_id", StringType(), True),
+        StructField("quantity", IntegerType(), True),
+        StructField("unit_price", DoubleType(), True),
+        StructField("total_amount", DoubleType(), True),
+        StructField("payment_method", StringType(), True),
+        StructField("transaction_timestamp", StringType(), True),
+        StructField("transaction_type", StringType(), True),
+    ]
+)
 
-EVENT_SCHEMA = StructType([
-    StructField("event_id", StringType(), True),
-    StructField("event_type", StringType(), True),
-    StructField("event_timestamp", StringType(), True),
-    StructField("source", StringType(), True),
-    StructField("payload", PAYLOAD_SCHEMA, True),
-])
+EVENT_SCHEMA = StructType(
+    [
+        StructField("event_id", StringType(), True),
+        StructField("event_type", StringType(), True),
+        StructField("event_timestamp", StringType(), True),
+        StructField("source", StringType(), True),
+        StructField("payload", PAYLOAD_SCHEMA, True),
+    ]
+)
 
 
 def build_spark_session(app_name: str = "retail-transaction-stream") -> SparkSession:
@@ -135,8 +155,11 @@ def parse_events(raw_df: DataFrame) -> DataFrame:
     separated out downstream rather than crashing the query.
     """
     return (
-        raw_df.selectExpr("CAST(key AS STRING) as kafka_key", "CAST(value AS STRING) as json_value",
-                           "timestamp as kafka_timestamp")
+        raw_df.selectExpr(
+            "CAST(key AS STRING) as kafka_key",
+            "CAST(value AS STRING) as json_value",
+            "timestamp as kafka_timestamp",
+        )
         .withColumn("parsed", F.from_json(F.col("json_value"), EVENT_SCHEMA))
         .select("kafka_key", "kafka_timestamp", "json_value", "parsed.*")
     )
@@ -148,7 +171,12 @@ def split_valid_and_bad(parsed_df: DataFrame) -> tuple[DataFrame, DataFrame]:
     rejection so the data-quality report (Phase 13) is actionable."""
 
     flat = parsed_df.select(
-        "event_id", "event_type", "event_timestamp", "source", "kafka_timestamp", "json_value",
+        "event_id",
+        "event_type",
+        "event_timestamp",
+        "source",
+        "kafka_timestamp",
+        "json_value",
         F.col("payload.transaction_id").alias("transaction_id"),
         F.col("payload.customer_id").alias("customer_id"),
         F.col("payload.product_id").alias("product_id"),
@@ -168,15 +196,25 @@ def split_valid_and_bad(parsed_df: DataFrame) -> tuple[DataFrame, DataFrame]:
         .when(F.col("product_id").isNull(), "missing_product_id")
         .when(F.col("store_id").isNull(), "missing_store_id")
         .when(F.col("quantity").isNull() | (F.col("quantity") <= 0), "invalid_quantity")
-        .when(~F.col("payment_method").isin(list(VALID_PAYMENT_METHODS)), "invalid_payment_method")
-        .when(~F.col("transaction_type").isin(list(VALID_TRANSACTION_TYPES)), "invalid_transaction_type")
-        .when(F.col("transaction_timestamp") > F.current_timestamp(), "future_timestamp")
+        .when(
+            ~F.col("payment_method").isin(list(VALID_PAYMENT_METHODS)),
+            "invalid_payment_method",
+        )
+        .when(
+            ~F.col("transaction_type").isin(list(VALID_TRANSACTION_TYPES)),
+            "invalid_transaction_type",
+        )
+        .when(
+            F.col("transaction_timestamp") > F.current_timestamp(), "future_timestamp"
+        )
         .otherwise(None)
     )
 
     validated_all = flat.withColumn("rejection_reason", validation_reason)
 
-    good_df = validated_all.filter(F.col("rejection_reason").isNull()).drop("rejection_reason", "json_value")
+    good_df = validated_all.filter(F.col("rejection_reason").isNull()).drop(
+        "rejection_reason", "json_value"
+    )
     bad_df = validated_all.filter(F.col("rejection_reason").isNotNull())
 
     return good_df, bad_df
@@ -193,9 +231,8 @@ def deduplicate(df: DataFrame) -> DataFrame:
     watermark on a different column later in the same query lineage, so
     every downstream stage reuses this single watermark rather than
     calling withWatermark() again."""
-    return (
-        df.withWatermark("transaction_timestamp", WATERMARK_DELAY)
-        .dropDuplicates(["event_id"])
+    return df.withWatermark("transaction_timestamp", WATERMARK_DELAY).dropDuplicates(
+        ["event_id"]
     )
 
 
@@ -211,7 +248,9 @@ def sales_by_minute(df: DataFrame) -> DataFrame:
         .select(
             F.col("window.start").alias("window_start"),
             F.col("window.end").alias("window_end"),
-            "total_transactions", "total_sales", "average_transaction_value",
+            "total_transactions",
+            "total_sales",
+            "average_transaction_value",
         )
     )
 
@@ -226,7 +265,12 @@ def sales_by_city(df: DataFrame, stores_df: DataFrame) -> DataFrame:
             F.count("transaction_id").alias("transactions"),
             F.sum("total_amount").alias("revenue"),
         )
-        .select(F.col("window.start").alias("window_start"), "city", "transactions", "revenue")
+        .select(
+            F.col("window.start").alias("window_start"),
+            "city",
+            "transactions",
+            "revenue",
+        )
     )
 
 
@@ -238,12 +282,22 @@ def product_performance(df: DataFrame) -> DataFrame:
             F.sum("quantity").alias("units_sold"),
             F.sum("total_amount").alias("revenue"),
         )
-        .select(F.col("window.start").alias("window_start"), "product_id", "units_sold", "revenue")
+        .select(
+            F.col("window.start").alias("window_start"),
+            "product_id",
+            "units_sold",
+            "revenue",
+        )
     )
 
 
-def write_stream(df: DataFrame, path: str, checkpoint_subdir: str, output_mode: str = "append",
-                  trigger_seconds: int = 30):
+def write_stream(
+    df: DataFrame,
+    path: str,
+    checkpoint_subdir: str,
+    output_mode: str = "append",
+    trigger_seconds: int = 30,
+):
     return (
         df.writeStream.format("parquet")
         .option("path", path)
@@ -267,11 +321,12 @@ def main():
     # would be refreshed periodically from Snowflake/S3 rather than a
     # static local CSV.
     stores_path = os.getenv("STORES_REFERENCE_PATH", "data/reference/stores.csv")
-    stores_df = spark.read.option("header", True).csv(stores_path).select("store_id", "city")
+    stores_df = (
+        spark.read.option("header", True).csv(stores_path).select("store_id", "city")
+    )
 
     anomaly_query = (
-        deduped.writeStream
-        .foreachBatch(
+        deduped.writeStream.foreachBatch(
             lambda micro_batch_df, batch_id: anomaly_detection.run_in_foreach_batch(
                 micro_batch_df, batch_id, stores_df, ANOMALIES_PATH
             )
@@ -284,9 +339,24 @@ def main():
     queries = [
         write_stream(deduped, RAW_LAKE_PATH, "raw_transactions"),
         write_stream(bad_df, BAD_RECORDS_PATH, "bad_records"),
-        write_stream(sales_by_minute(deduped), AGG_MINUTE_PATH, "sales_by_minute", output_mode="append"),
-        write_stream(sales_by_city(deduped, stores_df), AGG_CITY_PATH, "sales_by_city", output_mode="append"),
-        write_stream(product_performance(deduped), AGG_PRODUCT_PATH, "product_performance", output_mode="append"),
+        write_stream(
+            sales_by_minute(deduped),
+            AGG_MINUTE_PATH,
+            "sales_by_minute",
+            output_mode="append",
+        ),
+        write_stream(
+            sales_by_city(deduped, stores_df),
+            AGG_CITY_PATH,
+            "sales_by_city",
+            output_mode="append",
+        ),
+        write_stream(
+            product_performance(deduped),
+            AGG_PRODUCT_PATH,
+            "product_performance",
+            output_mode="append",
+        ),
         anomaly_query,
     ]
 

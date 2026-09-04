@@ -110,11 +110,7 @@ def load_table(spark: SparkSession, s3_path: str, target_table: str) -> int:
     df = _prepare_transactions(df)
     row_count = df.count()
 
-    (
-        df.coalesce(8)
-        .write.mode("overwrite")
-        .parquet(LOCAL_EXPORT_DIR)
-    )
+    (df.coalesce(8).write.mode("overwrite").parquet(LOCAL_EXPORT_DIR))
 
     _load_via_snowflake_connector(LOCAL_EXPORT_DIR, target_table)
     return row_count

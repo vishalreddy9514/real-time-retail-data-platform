@@ -69,21 +69,80 @@ CATEGORIES = {
     "Health & Beauty": ["Skincare", "Haircare", "Vitamins"],
 }
 
-BRANDS = ["Tesco Value", "AeroTech", "UrbanFit", "GreenLeaf", "NordicHome",
-          "PureGlow", "Bristol Bakes", "MetroWear", "CasaViva", "TrueTone"]
+BRANDS = [
+    "Tesco Value",
+    "AeroTech",
+    "UrbanFit",
+    "GreenLeaf",
+    "NordicHome",
+    "PureGlow",
+    "Bristol Bakes",
+    "MetroWear",
+    "CasaViva",
+    "TrueTone",
+]
 
-FIRST_NAMES = ["Oliver", "Amelia", "George", "Isla", "Noah", "Ava", "Jack",
-               "Freya", "Leo", "Grace", "Harry", "Sophie", "Muhammad", "Ella",
-               "Arjun", "Priya", "Liam", "Chloe", "Ryan", "Megan"]
-LAST_NAMES = ["Smith", "Jones", "Taylor", "Brown", "Williams", "Wilson",
-              "Evans", "Thomas", "Roberts", "Walker", "Khan", "Patel",
-              "Murphy", "Clarke", "Hughes", "Edwards", "Green", "Hall"]
+FIRST_NAMES = [
+    "Oliver",
+    "Amelia",
+    "George",
+    "Isla",
+    "Noah",
+    "Ava",
+    "Jack",
+    "Freya",
+    "Leo",
+    "Grace",
+    "Harry",
+    "Sophie",
+    "Muhammad",
+    "Ella",
+    "Arjun",
+    "Priya",
+    "Liam",
+    "Chloe",
+    "Ryan",
+    "Megan",
+]
+LAST_NAMES = [
+    "Smith",
+    "Jones",
+    "Taylor",
+    "Brown",
+    "Williams",
+    "Wilson",
+    "Evans",
+    "Thomas",
+    "Roberts",
+    "Walker",
+    "Khan",
+    "Patel",
+    "Murphy",
+    "Clarke",
+    "Hughes",
+    "Edwards",
+    "Green",
+    "Hall",
+]
 
 SEGMENTS = ["Budget", "Mainstream", "Premium", "Loyalty-Gold"]
 AGE_GROUPS = ["18-24", "25-34", "35-44", "45-54", "55-64", "65+"]
 
-POSTCODE_AREAS = ["GU", "SW", "M1", "B1", "LS1", "L1", "BS1", "G1", "EH1",
-                   "S1", "NG1", "CF1", "SO1"]
+POSTCODE_AREAS = [
+    "GU",
+    "SW",
+    "M1",
+    "B1",
+    "LS1",
+    "L1",
+    "BS1",
+    "G1",
+    "EH1",
+    "S1",
+    "NG1",
+    "CF1",
+    "SO1",
+]
 
 
 @dataclass
@@ -130,9 +189,9 @@ def generate_customers(n: int) -> list[Customer]:
                 customer_name=f"{random.choice(FIRST_NAMES)} {random.choice(LAST_NAMES)}",
                 age_group=random.choice(AGE_GROUPS),
                 postcode_area=random.choice(POSTCODE_AREAS),
-                customer_segment=random.choices(
-                    SEGMENTS, weights=[0.3, 0.4, 0.2, 0.1]
-                )[0],
+                customer_segment=random.choices(SEGMENTS, weights=[0.3, 0.4, 0.2, 0.1])[
+                    0
+                ],
                 registration_date=reg_date.isoformat(),
             )
         )

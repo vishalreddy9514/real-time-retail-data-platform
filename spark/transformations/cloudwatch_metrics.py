@@ -28,22 +28,27 @@ NAMESPACE = "RetailPlatform"
 
 def _get_client():
     import boto3
+
     return boto3.client("cloudwatch")
 
 
-def put_metric(metric_name: str, value: float, unit: str = "Count", dimensions: dict | None = None):
+def put_metric(
+    metric_name: str, value: float, unit: str = "Count", dimensions: dict | None = None
+):
     try:
         client = _get_client()
         dims = [{"Name": k, "Value": v} for k, v in (dimensions or {}).items()]
         client.put_metric_data(
             Namespace=NAMESPACE,
-            MetricData=[{
-                "MetricName": metric_name,
-                "Value": value,
-                "Unit": unit,
-                "Timestamp": datetime.now(timezone.utc),
-                "Dimensions": dims,
-            }],
+            MetricData=[
+                {
+                    "MetricName": metric_name,
+                    "Value": value,
+                    "Unit": unit,
+                    "Timestamp": datetime.now(timezone.utc),
+                    "Dimensions": dims,
+                }
+            ],
         )
         logger.info("Published metric %s=%s (%s)", metric_name, value, unit)
     except Exception as exc:  # noqa: BLE001 - monitoring must never crash the caller
@@ -51,11 +56,15 @@ def put_metric(metric_name: str, value: float, unit: str = "Count", dimensions: 
 
 
 def publish_kafka_lag(lag_records: int, consumer_group: str):
-    put_metric("ConsumerLagRecords", lag_records, dimensions={"ConsumerGroup": consumer_group})
+    put_metric(
+        "ConsumerLagRecords", lag_records, dimensions={"ConsumerGroup": consumer_group}
+    )
 
 
 def publish_data_freshness(minutes_stale: float, table: str):
-    put_metric("DataFreshnessMinutes", minutes_stale, unit="None", dimensions={"Table": table})
+    put_metric(
+        "DataFreshnessMinutes", minutes_stale, unit="None", dimensions={"Table": table}
+    )
 
 
 def publish_dq_failure_count(count: int, check_name: str):

@@ -69,7 +69,9 @@ def send_event(producer: KafkaProducer, event: dict) -> None:
     try:
         future = producer.send(TOPIC_TRANSACTIONS, key=key, value=event)
         future.add_errback(
-            lambda exc: logger.error("Delivery failed for %s: %s", event["event_id"], exc)
+            lambda exc: logger.error(
+                "Delivery failed for %s: %s", event["event_id"], exc
+            )
         )
     except KafkaError as exc:
         logger.error("Producer error: %s", exc)
@@ -89,7 +91,8 @@ def run():
 
     logger.info(
         "Starting event generation: ~%.2f events/sec -> topic '%s'",
-        EVENTS_PER_SECOND, TOPIC_TRANSACTIONS,
+        EVENTS_PER_SECOND,
+        TOPIC_TRANSACTIONS,
     )
 
     while not _shutdown:

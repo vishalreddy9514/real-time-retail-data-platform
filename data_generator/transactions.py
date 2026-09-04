@@ -60,7 +60,9 @@ class TransactionGenerator:
 
         # A small pool of "hot" customers is used to make burst / geo
         # anomaly patterns statistically plausible during demos.
-        self._burst_customers = random.sample(self.customers, k=min(15, len(self.customers)))
+        self._burst_customers = random.sample(
+            self.customers, k=min(15, len(self.customers))
+        )
 
     def _pick_transaction_type(self) -> str:
         types, weights = zip(*TRANSACTION_TYPES_WEIGHTS.items())

@@ -21,12 +21,17 @@ VALID_TRANSACTION_TYPES = {"purchase", "refund", "cancellation"}
 
 
 def null_transaction_ids(df: DataFrame) -> DataFrame:
-    return df.filter(F.col("transaction_id").isNull()).withColumn("dq_reason", F.lit("null_transaction_id"))
+    return df.filter(F.col("transaction_id").isNull()).withColumn(
+        "dq_reason", F.lit("null_transaction_id")
+    )
 
 
 def duplicate_transaction_ids(df: DataFrame) -> DataFrame:
     dupes = (
-        df.groupBy("transaction_id").count().filter(F.col("count") > 1).select("transaction_id")
+        df.groupBy("transaction_id")
+        .count()
+        .filter(F.col("count") > 1)
+        .select("transaction_id")
     )
     return df.join(dupes, on="transaction_id", how="inner").withColumn(
         "dq_reason", F.lit("duplicate_transaction_id")
@@ -40,19 +45,21 @@ def invalid_amounts(df: DataFrame) -> DataFrame:
 
 
 def negative_quantities(df: DataFrame) -> DataFrame:
-    return df.filter(F.col("quantity") <= 0).withColumn("dq_reason", F.lit("negative_or_zero_quantity"))
+    return df.filter(F.col("quantity") <= 0).withColumn(
+        "dq_reason", F.lit("negative_or_zero_quantity")
+    )
 
 
 def invalid_payment_methods(df: DataFrame) -> DataFrame:
-    return df.filter(~F.col("payment_method").isin(list(VALID_PAYMENT_METHODS))).withColumn(
-        "dq_reason", F.lit("invalid_payment_method")
-    )
+    return df.filter(
+        ~F.col("payment_method").isin(list(VALID_PAYMENT_METHODS))
+    ).withColumn("dq_reason", F.lit("invalid_payment_method"))
 
 
 def invalid_transaction_types(df: DataFrame) -> DataFrame:
-    return df.filter(~F.col("transaction_type").isin(list(VALID_TRANSACTION_TYPES))).withColumn(
-        "dq_reason", F.lit("invalid_transaction_type")
-    )
+    return df.filter(
+        ~F.col("transaction_type").isin(list(VALID_TRANSACTION_TYPES))
+    ).withColumn("dq_reason", F.lit("invalid_transaction_type"))
 
 
 def future_timestamps(df: DataFrame) -> DataFrame:
@@ -61,24 +68,34 @@ def future_timestamps(df: DataFrame) -> DataFrame:
     )
 
 
-def referential_integrity(df: DataFrame, customers_df: DataFrame, products_df: DataFrame,
-                           stores_df: DataFrame) -> DataFrame:
+def referential_integrity(
+    df: DataFrame, customers_df: DataFrame, products_df: DataFrame, stores_df: DataFrame
+) -> DataFrame:
     """Rows whose foreign keys don't exist in the current dimension
     snapshots - a real-world symptom of late-arriving dimension data or
     upstream key changes."""
-    bad_customer = df.join(customers_df.select("customer_id"), "customer_id", "left_anti")
+    bad_customer = df.join(
+        customers_df.select("customer_id"), "customer_id", "left_anti"
+    )
     bad_product = df.join(products_df.select("product_id"), "product_id", "left_anti")
     bad_store = df.join(stores_df.select("store_id"), "store_id", "left_anti")
 
     return (
         bad_customer.withColumn("dq_reason", F.lit("invalid_customer_id"))
-        .unionByName(bad_product.withColumn("dq_reason", F.lit("invalid_product_id")), allowMissingColumns=True)
-        .unionByName(bad_store.withColumn("dq_reason", F.lit("invalid_store_id")), allowMissingColumns=True)
+        .unionByName(
+            bad_product.withColumn("dq_reason", F.lit("invalid_product_id")),
+            allowMissingColumns=True,
+        )
+        .unionByName(
+            bad_store.withColumn("dq_reason", F.lit("invalid_store_id")),
+            allowMissingColumns=True,
+        )
     )
 
 
-def run_report(df: DataFrame, customers_df: DataFrame, products_df: DataFrame,
-               stores_df: DataFrame) -> DataFrame:
+def run_report(
+    df: DataFrame, customers_df: DataFrame, products_df: DataFrame, stores_df: DataFrame
+) -> DataFrame:
     """Union of all violations, for a single data-quality report table /
     dashboard page. Each row keeps its original columns plus dq_reason."""
     checks = [

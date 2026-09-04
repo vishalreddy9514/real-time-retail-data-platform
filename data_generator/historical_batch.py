@@ -36,8 +36,13 @@ def _load_csv(name: str) -> pd.DataFrame:
     return pd.read_csv(REFERENCE_DIR / name)
 
 
-def generate_day(day: datetime, customers: pd.DataFrame, products: pd.DataFrame,
-                  stores: pd.DataFrame, rows_per_day: int) -> pd.DataFrame:
+def generate_day(
+    day: datetime,
+    customers: pd.DataFrame,
+    products: pd.DataFrame,
+    stores: pd.DataFrame,
+    rows_per_day: int,
+) -> pd.DataFrame:
     types, weights = zip(*TRANSACTION_TYPES_WEIGHTS.items())
 
     cust_sample = customers.sample(rows_per_day, replace=True).reset_index(drop=True)
@@ -54,28 +59,57 @@ def generate_day(day: datetime, customers: pd.DataFrame, products: pd.DataFrame,
 
     # random second-level timestamps spread across the day, weighted toward
     # lunchtime / early-evening "busy periods" for realism
-    hour_weights = [1, 1, 1, 1, 1, 2, 3, 4, 5, 6, 7, 8, 8, 9, 7, 6, 6, 7, 9, 8, 6, 4, 2, 1]
+    hour_weights = [
+        1,
+        1,
+        1,
+        1,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        8,
+        9,
+        7,
+        6,
+        6,
+        7,
+        9,
+        8,
+        6,
+        4,
+        2,
+        1,
+    ]
     hours = random.choices(range(24), weights=hour_weights, k=rows_per_day)
     timestamps = [
         day.replace(hour=h, minute=random.randint(0, 59), second=random.randint(0, 59))
         for h in hours
     ]
 
-    df = pd.DataFrame({
-        "transaction_id": [f"TXN-{uuid.uuid4().hex[:12].upper()}" for _ in range(rows_per_day)],
-        "customer_id": cust_sample["customer_id"],
-        "product_id": prod_sample["product_id"],
-        "store_id": store_sample["store_id"],
-        "quantity": quantity,
-        "unit_price": unit_price,
-        "total_amount": total_amount,
-        "payment_method": random.choices(PAYMENT_METHODS, k=rows_per_day),
-        "transaction_timestamp": timestamps,
-        "transaction_type": txn_type,
-        "year": day.year,
-        "month": day.month,
-        "day": day.day,
-    })
+    df = pd.DataFrame(
+        {
+            "transaction_id": [
+                f"TXN-{uuid.uuid4().hex[:12].upper()}" for _ in range(rows_per_day)
+            ],
+            "customer_id": cust_sample["customer_id"],
+            "product_id": prod_sample["product_id"],
+            "store_id": store_sample["store_id"],
+            "quantity": quantity,
+            "unit_price": unit_price,
+            "total_amount": total_amount,
+            "payment_method": random.choices(PAYMENT_METHODS, k=rows_per_day),
+            "transaction_timestamp": timestamps,
+            "transaction_type": txn_type,
+            "year": day.year,
+            "month": day.month,
+            "day": day.day,
+        }
+    )
     return df
 
 
@@ -91,21 +125,34 @@ def main(days: int, rows_per_day: int):
         day = end - timedelta(days=offset)
         df = generate_day(day, customers, products, stores, rows_per_day)
 
-        out_dir = HISTORICAL_DIR / f"year={day.year}" / f"month={day.month:02d}" / f"day={day.day:02d}"
+        out_dir = (
+            HISTORICAL_DIR
+            / f"year={day.year}"
+            / f"month={day.month:02d}"
+            / f"day={day.day:02d}"
+        )
         out_dir.mkdir(parents=True, exist_ok=True)
         out_path = out_dir / "transactions.parquet"
         df.drop(columns=["year", "month", "day"]).to_parquet(out_path, index=False)
 
         total_rows += len(df)
         if offset % 30 == 0:
-            print(f"[{offset}/{days}] {day.date()} -> {len(df)} rows written to {out_path}")
+            print(
+                f"[{offset}/{days}] {day.date()} -> {len(df)} rows written to {out_path}"
+            )
 
-    print(f"Done. Generated {total_rows:,} historical rows across {days} days -> {HISTORICAL_DIR}")
+    print(
+        f"Done. Generated {total_rows:,} historical rows across {days} days -> {HISTORICAL_DIR}"
+    )
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Generate historical retail transaction batch data")
-    parser.add_argument("--days", type=int, default=180, help="Number of historical days to generate")
+    parser = argparse.ArgumentParser(
+        description="Generate historical retail transaction batch data"
+    )
+    parser.add_argument(
+        "--days", type=int, default=180, help="Number of historical days to generate"
+    )
     parser.add_argument("--rows-per-day", type=int, default=20000, help="Rows per day")
     args = parser.parse_args()
     main(args.days, args.rows_per_day)

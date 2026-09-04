@@ -12,7 +12,9 @@ from pathlib import Path
 
 import pytest
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "spark" / "transformations"))
+sys.path.insert(
+    0, str(Path(__file__).resolve().parent.parent / "spark" / "transformations")
+)
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "spark" / "streaming"))
 
 pyspark = pytest.importorskip("pyspark")
@@ -39,19 +41,83 @@ def sample_transactions(spark):
     now = datetime.now(timezone.utc)
     rows = [
         # valid purchase
-        ("TXN-1", "CUST-1", "PROD-1", "STORE-1", 2, 10.0, 20.0, "card", now, "purchase"),
+        (
+            "TXN-1",
+            "CUST-1",
+            "PROD-1",
+            "STORE-1",
+            2,
+            10.0,
+            20.0,
+            "card",
+            now,
+            "purchase",
+        ),
         # negative quantity -> invalid
-        ("TXN-2", "CUST-2", "PROD-1", "STORE-1", -1, 10.0, -10.0, "card", now, "purchase"),
+        (
+            "TXN-2",
+            "CUST-2",
+            "PROD-1",
+            "STORE-1",
+            -1,
+            10.0,
+            -10.0,
+            "card",
+            now,
+            "purchase",
+        ),
         # invalid payment method
-        ("TXN-3", "CUST-3", "PROD-1", "STORE-1", 1, 10.0, 10.0, "bitcoin", now, "purchase"),
+        (
+            "TXN-3",
+            "CUST-3",
+            "PROD-1",
+            "STORE-1",
+            1,
+            10.0,
+            10.0,
+            "bitcoin",
+            now,
+            "purchase",
+        ),
         # future timestamp
-        ("TXN-4", "CUST-4", "PROD-1", "STORE-1", 1, 10.0, 10.0, "card", now + timedelta(days=2), "purchase"),
+        (
+            "TXN-4",
+            "CUST-4",
+            "PROD-1",
+            "STORE-1",
+            1,
+            10.0,
+            10.0,
+            "card",
+            now + timedelta(days=2),
+            "purchase",
+        ),
         # duplicate of TXN-1
-        ("TXN-1", "CUST-1", "PROD-1", "STORE-1", 2, 10.0, 20.0, "card", now, "purchase"),
+        (
+            "TXN-1",
+            "CUST-1",
+            "PROD-1",
+            "STORE-1",
+            2,
+            10.0,
+            20.0,
+            "card",
+            now,
+            "purchase",
+        ),
     ]
-    columns = ["transaction_id", "customer_id", "product_id", "store_id", "quantity",
-               "unit_price", "total_amount", "payment_method", "transaction_timestamp",
-               "transaction_type"]
+    columns = [
+        "transaction_id",
+        "customer_id",
+        "product_id",
+        "store_id",
+        "quantity",
+        "unit_price",
+        "total_amount",
+        "payment_method",
+        "transaction_timestamp",
+        "transaction_type",
+    ]
     return spark.createDataFrame(rows, columns)
 
 
