@@ -86,6 +86,35 @@ can be demoed without any AWS spend. **AWS production architecture**
 would replace these with managed equivalents (MSK, EMR/Glue, MWAA) behind
 the same code — see `docker-compose.yml` vs `terraform/`.
 
+## Pipeline in Action
+
+Screenshots from a live run of the full stack — Kafka producing, Spark
+streaming, and Snowflake/dbt serving the resulting star schema.
+
+### Kafka: live message flow
+
+Events streaming into the `transactions` topic, evenly distributed across
+6 partitions (keyed by `customer_id`), confirming the partitioning
+strategy holds up under real load.
+
+![Kafka topic overview](docs/screenshots/kafka-topic-transactions.png)
+
+### dbt: data quality tests
+
+43 of 44 dbt tests passing. The one failure is a genuine finding, not a
+bug — `assert_refund_amount_not_greater_than_sales` catches products
+where refund amounts exceed gross sales, a real edge case surfaced by
+the anomaly injection logic in the data generator.
+
+![dbt test results](docs/screenshots/dbt-test-results.png)
+
+### Snowflake: real analytics on real data
+
+A query against the `fct_sales` / `dim_store` star schema, aggregating
+revenue by UK city from live streamed transaction data.
+
+![Sales by city](docs/screenshots/snowflake-sales-by-city.png)
+
 ## 4. Technology Stack & Why
 
 | Layer | Technology | Why |
