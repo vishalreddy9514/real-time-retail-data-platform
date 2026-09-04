@@ -1,0 +1,16 @@
+# Copy to ~/.dbt/profiles.yml locally (never commit the real file).
+# All secrets are pulled from environment variables so nothing sensitive
+# is stored in the repo.
+retail_data_platform:
+  target: dev
+  outputs:
+    dev:
+      type: snowflake
+      account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
+      user: "{{ env_var('SNOWFLAKE_USER') }}"
+      password: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
+      role: "{{ env_var('SNOWFLAKE_ROLE', 'RETAIL_LOADER') }}"
+      database: "{{ env_var('SNOWFLAKE_DATABASE', 'RETAIL_PLATFORM') }}"
+      warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE', 'RETAIL_WH') }}"
+      schema: analytics
+      threads: 4

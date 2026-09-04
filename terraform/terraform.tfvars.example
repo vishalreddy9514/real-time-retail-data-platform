@@ -1,0 +1,3 @@
+aws_region             = "eu-west-2"
+environment            = "dev"
+data_lake_bucket_name  = "retail-data-platform-yourname-dev" # must be globally unique

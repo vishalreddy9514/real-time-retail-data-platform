@@ -1,0 +1,42 @@
+# Secrets
+.env
+profiles.yml
+*.pem
+*.key
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+
+# Spark / Airflow / dbt artifacts
+spark-warehouse/
+metastore_db/
+airflow/logs/
+airflow/plugins/__pycache__/
+dbt/target/
+dbt/dbt_packages/
+dbt/logs/
+
+# Terraform
+terraform/.terraform/
+terraform/*.tfstate
+terraform/*.tfstate.backup
+terraform/.terraform.lock.hcl
+terraform/terraform.tfvars
+
+# Data (generated, not committed - regenerate via data_generator scripts)
+data/reference/*.csv
+data/historical/
+data/lake/
+data/checkpoints/
+
+# OS/editor
+.DS_Store
+.idea/
+.vscode/
+*.log

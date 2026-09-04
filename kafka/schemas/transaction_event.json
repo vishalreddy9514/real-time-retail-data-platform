@@ -1,0 +1,39 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "TransactionEvent",
+  "description": "Envelope + payload schema for events on the 'transactions' Kafka topic. JSON is used for portability in this portfolio build; in a production deployment this would be registered in Confluent/AWS Glue Schema Registry as Avro with backward-compatible evolution enforced.",
+  "type": "object",
+  "required": ["event_id", "event_type", "event_timestamp", "source", "payload"],
+  "properties": {
+    "event_id": { "type": "string", "format": "uuid" },
+    "event_type": { "type": "string", "enum": ["transaction"] },
+    "event_timestamp": { "type": "string", "format": "date-time" },
+    "source": { "type": "string" },
+    "payload": {
+      "type": "object",
+      "required": [
+        "transaction_id", "customer_id", "product_id", "store_id",
+        "quantity", "unit_price", "total_amount", "payment_method",
+        "transaction_timestamp", "transaction_type"
+      ],
+      "properties": {
+        "transaction_id": { "type": "string" },
+        "customer_id": { "type": ["string", "null"] },
+        "product_id": { "type": ["string", "null"] },
+        "store_id": { "type": ["string", "null"] },
+        "quantity": { "type": "integer" },
+        "unit_price": { "type": "number" },
+        "total_amount": { "type": "number" },
+        "payment_method": {
+          "type": "string",
+          "enum": ["card", "digital_wallet", "cash", "bank_transfer"]
+        },
+        "transaction_timestamp": { "type": "string", "format": "date-time" },
+        "transaction_type": {
+          "type": "string",
+          "enum": ["purchase", "refund", "cancellation"]
+        }
+      }
+    }
+  }
+}

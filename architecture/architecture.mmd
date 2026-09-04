@@ -1,0 +1,34 @@
+```mermaid
+flowchart TD
+    A[Python event generator] --> C[Apache Kafka]
+    B[Historical batch generator] --> F[AWS S3 data lake]
+    C --> D[Spark Structured Streaming]
+    D -->|windowed aggregations| D
+    D -->|rule-based anomaly detection| D
+    D --> F
+    F --> E[Apache Airflow]
+    E --> G[Snowflake RAW + ANALYTICS]
+    G --> H[dbt: staging to intermediate to marts]
+    H --> I[Power BI dashboard]
+
+    subgraph Support[Supporting infrastructure]
+        J[Docker Compose - local dev]
+        K[Terraform - AWS S3 / IAM / CloudWatch]
+        L[GitHub Actions CI]
+        M[CloudWatch monitoring]
+    end
+```
+
+To regenerate `architecture.png` from this source, paste the block above into
+the [Mermaid Live Editor](https://mermaid.live) and export as PNG, or render
+it with the `mmdc` CLI:
+
+```bash
+npm install -g @mermaid-js/mermaid-cli
+mmdc -i architecture.mmd -o architecture.png
+```
+
+For a hand-editable version, import `architecture.svg` (in this same folder)
+into [diagrams.net / draw.io](https://app.diagrams.net) via File → Import
+From → Device, or recreate it there directly and export as
+`architecture.drawio`.

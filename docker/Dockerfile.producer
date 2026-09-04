@@ -1,0 +1,15 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir kafka-python==2.0.2 pandas==2.2.2 pyarrow==16.1.0
+
+COPY data_generator/ ./data_generator/
+
+WORKDIR /app/data_generator
+
+# Reference data must exist before the producer starts; generated once at
+# container start rather than baked into the image so it's easy to
+# regenerate with different volumes without a rebuild.
+CMD ["sh", "-c", "python reference_data.py && python kafka_producer.py"]

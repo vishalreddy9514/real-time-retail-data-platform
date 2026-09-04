@@ -1,0 +1,18 @@
+FROM bitnamilegacy/spark:3.5.1
+
+USER root
+WORKDIR /opt/spark-apps
+
+COPY spark/ ./
+COPY requirements.txt .
+
+RUN pip install --no-cache-dir pyspark==3.5.1
+
+# Kafka + Snowflake connector jars pulled at submit time via
+# --packages rather than baked in, so versions can be bumped without a
+# rebuild:
+#   org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1
+#   net.snowflake:spark-snowflake_2.12:2.11.0
+#   net.snowflake:snowflake-jdbc:3.13.30
+
+ENTRYPOINT ["spark-submit"]

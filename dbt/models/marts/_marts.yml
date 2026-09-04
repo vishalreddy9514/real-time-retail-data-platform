@@ -1,0 +1,61 @@
+version: 2
+
+models:
+  - name: fct_sales
+    description: "Grain: one row per completed retail transaction (purchase, refund, or cancellation)."
+    columns:
+      - name: transaction_sk
+        tests: [not_null, unique]
+      - name: transaction_id
+        tests: [not_null, unique]
+      - name: customer_sk
+        tests:
+          - relationships:
+              to: ref('dim_customer')
+              field: customer_sk
+      - name: product_sk
+        tests:
+          - relationships:
+              to: ref('dim_product')
+              field: product_sk
+      - name: store_sk
+        tests:
+          - relationships:
+              to: ref('dim_store')
+              field: store_sk
+
+  - name: fct_payments
+    description: "Grain: one row per payment associated with a transaction."
+    columns:
+      - name: payment_sk
+        tests: [not_null, unique]
+
+  - name: fct_refunds
+    description: "Grain: one row per refund transaction."
+    columns:
+      - name: refund_sk
+        tests: [not_null, unique]
+
+  - name: dim_customer
+    description: "Grain: one row per customer, current attributes plus derived lifetime purchase metrics."
+    columns:
+      - name: customer_sk
+        tests: [not_null, unique]
+      - name: customer_id
+        tests: [not_null, unique]
+
+  - name: dim_product
+    description: "Grain: one row per product."
+    columns:
+      - name: product_sk
+        tests: [not_null, unique]
+      - name: product_id
+        tests: [not_null, unique]
+
+  - name: dim_store
+    description: "Grain: one row per store."
+    columns:
+      - name: store_sk
+        tests: [not_null, unique]
+      - name: store_id
+        tests: [not_null, unique]

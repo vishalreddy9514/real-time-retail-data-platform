@@ -1,0 +1,57 @@
+version: 2
+
+models:
+  - name: stg_transactions
+    description: "One row per validated transaction event (purchase, refund, or cancellation), cleaned and typed."
+    columns:
+      - name: transaction_id
+        tests: [not_null, unique]
+      - name: customer_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_customers')
+              field: customer_id
+      - name: product_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_products')
+              field: product_id
+      - name: store_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_stores')
+              field: store_id
+      - name: payment_method
+        tests:
+          - accepted_values:
+              values: ['card', 'digital_wallet', 'cash', 'bank_transfer']
+      - name: transaction_type
+        tests:
+          - accepted_values:
+              values: ['purchase', 'refund', 'cancellation']
+      - name: quantity
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 1
+
+  - name: stg_customers
+    columns:
+      - name: customer_id
+        tests: [not_null, unique]
+
+  - name: stg_products
+    columns:
+      - name: product_id
+        tests: [not_null, unique]
+      - name: price
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+
+  - name: stg_stores
+    columns:
+      - name: store_id
+        tests: [not_null, unique]

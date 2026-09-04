@@ -1,0 +1,114 @@
+<svg width="100%" viewBox="0 0 680 1180" xmlns="http://www.w3.org/2000/svg" role="img">
+<title>Real-Time UK Retail Data Platform Architecture</title>
+<desc>Data flows from synthetic UK retail sources through Kafka, Spark Structured Streaming, AWS S3, Airflow-orchestrated Snowflake loads, dbt transformations, and finally Power BI dashboards, with Terraform/Docker/GitHub Actions supporting the whole platform.</desc>
+<defs>
+<marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+<path d="M2 1L8 5L2 9" fill="none" stroke="#5F5E5A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</marker>
+</defs>
+
+<style>
+text{font-family:Arial,Helvetica,sans-serif;fill:#2C2C2A;}
+.t{font-size:14px;}
+.th{font-size:14px;font-weight:600;}
+.ts{font-size:12px;fill:#5F5E5A;}
+.box{fill:#F1EFE8;stroke:#888780;stroke-width:0.5;}
+.arr{stroke:#5F5E5A;stroke-width:1.5;fill:none;}
+</style>
+
+<!-- Title -->
+<text class="th" x="340" y="30" text-anchor="middle" font-size="16">Real-time UK retail data platform</text>
+
+<!-- Row 1: Sources -->
+<g>
+<rect class="box" x="60" y="55" width="260" height="56" rx="8" fill="#EEEDFE" stroke="#7F77DD"/>
+<text class="th" x="190" y="76" text-anchor="middle" fill="#26215C">Python event generator</text>
+<text class="ts" x="190" y="96" text-anchor="middle" fill="#3C3489">Synthetic UK retail transactions</text>
+</g>
+<g>
+<rect class="box" x="360" y="55" width="260" height="56" rx="8" fill="#EEEDFE" stroke="#7F77DD"/>
+<text class="th" x="490" y="76" text-anchor="middle" fill="#26215C">Historical batch generator</text>
+<text class="ts" x="490" y="96" text-anchor="middle" fill="#3C3489">Backfill Parquet, year/month/day</text>
+</g>
+
+<line x1="190" y1="111" x2="190" y2="150" class="arr" marker-end="url(#arrow)"/>
+
+<!-- Row 2: Kafka -->
+<g>
+<rect x="90" y="150" width="500" height="70" rx="10" fill="#E1F5EE" stroke="#1D9E75" stroke-width="0.5"/>
+<text class="th" x="340" y="176" text-anchor="middle" fill="#04342C">Apache Kafka</text>
+<text class="ts" x="340" y="196" text-anchor="middle" fill="#085041">transactions (6 partitions, keyed by customer_id), payments, refunds, customers, products</text>
+</g>
+
+<line x1="340" y1="220" x2="340" y2="260" class="arr" marker-end="url(#arrow)"/>
+
+<!-- Row 3: Spark Streaming -->
+<g>
+<rect x="60" y="260" width="560" height="130" rx="10" fill="#FAECE7" stroke="#D85A30" stroke-width="0.5"/>
+<text class="th" x="340" y="284" text-anchor="middle" fill="#4A1B0C">Spark Structured Streaming</text>
+<text class="ts" x="340" y="303" text-anchor="middle" fill="#712B13">Validate · deduplicate · watermark · window</text>
+<rect x="90" y="320" width="240" height="50" rx="6" fill="#F5C4B3" stroke="#993C1D" stroke-width="0.5"/>
+<text class="ts" x="210" y="340" text-anchor="middle" fill="#4A1B0C">Windowed aggregations</text>
+<text class="ts" x="210" y="357" text-anchor="middle" fill="#4A1B0C">sales/min, by city, by product</text>
+<rect x="350" y="320" width="240" height="50" rx="6" fill="#F5C4B3" stroke="#993C1D" stroke-width="0.5"/>
+<text class="ts" x="470" y="340" text-anchor="middle" fill="#4A1B0C">Rule-based anomaly detection</text>
+<text class="ts" x="470" y="357" text-anchor="middle" fill="#4A1B0C">high-value, burst, geo, refund-rate</text>
+</g>
+
+<line x1="340" y1="390" x2="340" y2="430" class="arr" marker-end="url(#arrow)"/>
+
+<!-- Row 4: S3 -->
+<g>
+<rect x="90" y="430" width="500" height="70" rx="10" fill="#E6F1FB" stroke="#378ADD" stroke-width="0.5"/>
+<text class="th" x="340" y="456" text-anchor="middle" fill="#042C53">AWS S3 data lake</text>
+<text class="ts" x="340" y="476" text-anchor="middle" fill="#0C447C">raw/ → processed/ → curated/, partitioned by year/month/day</text>
+</g>
+
+<line x1="340" y1="500" x2="340" y2="540" class="arr" marker-end="url(#arrow)"/>
+
+<!-- Row 5: Airflow -->
+<g>
+<rect x="90" y="540" width="500" height="60" rx="10" fill="#FAEEDA" stroke="#BA7517" stroke-width="0.5"/>
+<text class="th" x="340" y="563" text-anchor="middle" fill="#412402">Apache Airflow</text>
+<text class="ts" x="340" y="583" text-anchor="middle" fill="#854F0B">Scheduled batch load, orchestration only</text>
+</g>
+
+<line x1="340" y1="600" x2="340" y2="640" class="arr" marker-end="url(#arrow)"/>
+
+<!-- Row 6: Snowflake -->
+<g>
+<rect x="90" y="640" width="500" height="90" rx="10" fill="#E6F1FB" stroke="#378ADD" stroke-width="0.5"/>
+<text class="th" x="340" y="664" text-anchor="middle" fill="#042C53">Snowflake</text>
+<text class="ts" x="340" y="684" text-anchor="middle" fill="#0C447C">RAW.STG_* staging tables</text>
+<text class="ts" x="340" y="700" text-anchor="middle" fill="#0C447C">ANALYTICS: fact_/dim_ star schema</text>
+</g>
+
+<line x1="340" y1="730" x2="340" y2="770" class="arr" marker-end="url(#arrow)"/>
+
+<!-- Row 7: dbt -->
+<g>
+<rect x="90" y="770" width="500" height="70" rx="10" fill="#FBEAF0" stroke="#D4537E" stroke-width="0.5"/>
+<text class="th" x="340" y="796" text-anchor="middle" fill="#4B1528">dbt</text>
+<text class="ts" x="340" y="816" text-anchor="middle" fill="#993556">staging → intermediate → marts, with tests</text>
+</g>
+
+<line x1="340" y1="840" x2="340" y2="880" class="arr" marker-end="url(#arrow)"/>
+
+<!-- Row 8: Power BI -->
+<g>
+<rect x="90" y="880" width="500" height="60" rx="10" fill="#EAF3DE" stroke="#639922" stroke-width="0.5"/>
+<text class="th" x="340" y="903" text-anchor="middle" fill="#173404">Power BI dashboard</text>
+<text class="ts" x="340" y="923" text-anchor="middle" fill="#3B6D11">Executive, sales, product, customer, anomaly pages</text>
+</g>
+
+<!-- Supporting infra footer -->
+<line x1="340" y1="940" x2="340" y2="975" class="arr" marker-end="url(#arrow)"/>
+<g>
+<rect x="60" y="975" width="560" height="90" rx="10" fill="#F1EFE8" stroke="#888780" stroke-width="0.5"/>
+<text class="th" x="340" y="1000" text-anchor="middle">Supporting infrastructure</text>
+<text class="ts" x="340" y="1022" text-anchor="middle">Docker Compose (local dev) · Terraform (AWS S3/IAM/CloudWatch)</text>
+<text class="ts" x="340" y="1040" text-anchor="middle">GitHub Actions CI (lint, tests, dbt parse, terraform validate)</text>
+<text class="ts" x="340" y="1058" text-anchor="middle">CloudWatch monitoring: Kafka lag, freshness, bad-record rate</text>
+</g>
+
+</svg>
