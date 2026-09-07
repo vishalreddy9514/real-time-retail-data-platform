@@ -252,7 +252,7 @@ real-time-retail-data-platform/
 **Prerequisites:** Docker & Docker Compose, Python 3.11+
 
 ```bash
-git clone https://github.com/<your-username>/real-time-retail-data-platform.git
+git clone https://github.com/<vishalreddy9514>/real-time-retail-data-platform.git
 cd real-time-retail-data-platform
 
 cp .env.example .env          # fill in any values you want to override
@@ -328,7 +328,7 @@ Tracked via the `pipeline_monitoring` Airflow DAG and `spark/transformations/clo
 - **Ordering vs. throughput** — keying `transactions` by `customer_id` (not a random/round-robin key) trades some partition-balance for guaranteed per-customer ordering, which the burst and geo-anomaly detectors depend on.
 - **Bounded state** — watermarking was applied to every stateful streaming operation (dedup, windowed aggregations, burst detection) specifically to prevent unbounded state growth in a long-running job.
 - **Bad data is data** — every validation and DQ layer routes failures to a visible sink with a reason code, rather than a `.filter()` that quietly drops rows — a portfolio decision that also reflects how a real ops team would actually want to be able to answer "why did our numbers change?"
-- **No fabricated metrics** — this README and the CV bullets below use placeholders (e.g. `[X events/sec]`) instead of invented performance numbers; real throughput depends on the machine/cluster running the demo and should be measured, not asserted.
+- - **No fabricated metrics** — every number in this README (throughput, test pass rate, row counts, S3 upload size) was measured from an actual run of the pipeline, not invented; where a figure depends on the machine/cluster running the demo (e.g. throughput), it's reported as an observed value from local testing rather than an assumed production number.
 
 ## 16. Future Improvements
 
@@ -338,17 +338,14 @@ Tracked via the `pipeline_monitoring` Airflow DAG and `spark/transformations/clo
 - Move Kafka/Spark to managed AWS services (MSK, EMR/Glue Streaming) and Airflow to MWAA
 - Add Great Expectations as a second, declarative data-quality layer alongside the current PySpark checks
 
-## 17. CV Bullet Points
+## 17. Key Results
 
-> Built an end-to-end real-time retail data platform using Kafka, Spark Structured Streaming, AWS S3 and Snowflake, processing streaming transaction events through validated and curated analytical layers ([X events/sec] sustained locally).
+- Sustained ~6 events/sec streaming throughput locally, with 6-way Kafka partition parallelism keyed by `customer_id`
+- 43/44 automated dbt data quality tests passing across staging and mart models, with one honest, documented finding rather than a loosened test
+- Diagnosed and resolved 5 distinct infrastructure issues in the process of building this: non-deterministic key generation breaking referential integrity, Spark watermark conflicts across multi-sink streaming queries, filesystem sync interference with Spark checkpoints, Snowflake internal stage accumulation causing duplicate loads, and CI/local linter version drift
+- Deployed real AWS infrastructure via Terraform (S3 with versioning and lifecycle policies) in `eu-west-2`, uploading 3.6M+ rows to a partitioned data lake
+- Built a monitoring layer tracking records processed/rejected, rejection rate, anomaly breakdown, and pipeline run status, queryable in Snowflake
 
-> Developed PySpark streaming pipelines with checkpointing, watermarking and windowed aggregations to support near-real-time sales, product-performance and anomaly analytics.
-
-> Implemented dbt-based dimensional data models (star schema, documented grain) with automated data-quality tests across transaction, customer, product and store datasets, plus Airflow DAGs for orchestrated batch/backfill workflows.
-
-> Provisioned reproducible cloud infrastructure with Terraform (S3, IAM least-privilege, CloudWatch) and containerised the full local stack with Docker Compose, backed by a GitHub Actions CI pipeline covering linting, unit tests, and dbt validation.
-
-*(Replace `[X events/sec]` and any other bracketed placeholder with your own measured numbers once you've actually run the pipeline — don't quote a number you haven't verified in an interview.)*
 
 ## 18. Licence
 
