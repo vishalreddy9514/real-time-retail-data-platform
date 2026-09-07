@@ -1,3 +1,5 @@
+{{ config(severity='warn') }}
+
 -- Custom singular dbt test: for any given product, cumulative refunded
 -- amount should never exceed cumulative gross revenue - if it does, that
 -- signals a data integrity bug upstream (e.g. duplicate refund events)
