@@ -91,6 +91,37 @@ the same code — see `docker-compose.yml` vs `terraform/`.
 Screenshots from a live run of the full stack — Kafka producing, Spark
 streaming, and Snowflake/dbt serving the resulting star schema.
 
+## AWS Deployment
+
+While local development runs entirely in Docker, this project also
+deploys real infrastructure to AWS to prove the pipeline isn't just
+theoretical.
+
+**Provisioned with Terraform** (`terraform/main.tf`): an S3 bucket in
+`eu-west-2` (London, matching UK data residency for a UK retailer),
+with versioning enabled and a lifecycle policy that automatically
+transitions data older than 30 days to Standard-IA and 180 days to
+Glacier — keeping storage cost low for historical data that's rarely
+queried.
+
+3.6 million rows (180 days of historical transactions, ~114 MB) were
+generated and uploaded to a `raw/` zone, partitioned by
+`year/month/day` — the same partitioning convention the Spark
+streaming job uses locally, so the same code would work unchanged
+against S3 in a production deployment (paths are entirely
+environment-variable driven).
+
+![S3 data lake](docs/screenshots/aws-s3-datalake.png)
+
+```bash
+$ terraform apply
+Apply complete! Resources: 3 added, 0 changed, 0 destroyed.
+
+$ aws s3 ls s3://retail-platform-vishalreddy9514-datalake/raw/historical --recursive --summarize
+Total Objects: 180
+Total Size: 119857576
+```
+
 ### Kafka: live message flow
 
 Events streaming into the `transactions` topic, evenly distributed across
